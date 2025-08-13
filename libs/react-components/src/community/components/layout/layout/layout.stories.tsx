@@ -1,4 +1,5 @@
 import { Meta, StoryFn, StoryObj } from '@storybook/react';
+import { useState } from 'react';
 
 import { Section } from '../../../../tedi/components/content/section/section';
 import { VerticalSpacing } from '../../../../tedi/components/layout/vertical-spacing';
@@ -185,5 +186,25 @@ export const MainGrow: Story = {
         </StretchContent>
       </>
     ),
+  },
+};
+
+export const WithCustomMenu: Story = {
+  render: (args) => {
+    const [isMenuShown, setIsMenuShown] = useState(false);
+    return (
+      <Layout
+        {...args}
+        header={HeaderDefault.args as HeaderProps<'a'>}
+        onHeaderSidenavToggle={() => setIsMenuShown(!isMenuShown)}
+      >
+        <div>Custom menu status: {isMenuShown ? 'Opened' : 'Closed'}</div>
+      </Layout>
+    );
+  },
+  args: {
+    ...Default.args,
+    breadcrumbsProps: undefined,
+    sideNav: undefined,
   },
 };

@@ -62,10 +62,16 @@ export interface ILayoutProps<
   /**
    * Type of the Header
    * - System header is meant for logged in system
-   * - Public is meant for public pages where user is not yer signed in, usally also does not have sidenav on desktop
+   * - Public is meant for public pages where user is not yet signed in, usually also does not have sidenav on desktop
    * @default 'system'
    */
   headerType?: 'system' | 'public';
+  /**
+   * Custom toggle function for mobile menu
+   * If provided, SidenavToggle will be shown and this function will be called when toggled
+   * @param menuOpen - The current state of the menu (true if open, false if closed)
+   */
+  onHeaderSidenavToggle?: (menuOpen: boolean) => void;
 }
 
 export const Layout = <
@@ -86,6 +92,7 @@ export const Layout = <
     mainLogo,
     growMainContent,
     headerType = 'system',
+    onHeaderSidenavToggle,
     ...rest
   } = props;
   const headerElement = React.useRef<HTMLElement>(null);
@@ -137,6 +144,7 @@ export const Layout = <
         headerElement,
         headerBottomElement,
         headerBottomSize,
+        onHeaderSidenavToggle,
       }}
     >
       <AccessibilityProvider>
