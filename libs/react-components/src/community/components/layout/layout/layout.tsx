@@ -70,6 +70,7 @@ export interface ILayoutProps<
    * Custom toggle function for mobile menu
    * If provided, SidenavToggle will be shown and this function will be called when toggled
    * @param menuOpen - The current state of the menu (true if open, false if closed)
+   * @default undefined
    */
   onHeaderSidenavToggle?: (menuOpen: boolean) => void;
 }
