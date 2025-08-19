@@ -74,7 +74,6 @@ export interface ILayoutProps<
    */
   onHeaderSidenavToggle?: (menuOpen: boolean) => void;
 }
-
 export const Layout = <
   B extends React.ElementType = 'a',
   S extends React.ElementType = 'a',
@@ -96,23 +95,23 @@ export const Layout = <
     onHeaderSidenavToggle,
     ...rest
   } = props;
+
   const headerElement = React.useRef<HTMLElement>(null);
   const headerBottomElement = React.useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const { hasSidenav } = useSidenavRendered(headerType, sideNav);
+
+  const floatingDisabled = !!onHeaderSidenavToggle && !sideNav;
   const { y, refs, context } = useFloating({
     placement: 'bottom-start',
     open: menuOpen,
-    onOpenChange: setMenuOpen,
+    onOpenChange: floatingDisabled ? undefined : setMenuOpen,
     whileElementsMounted: (...args) => autoUpdate(...args, { ancestorScroll: false }),
   });
+  const interactions = useInteractions([useClick(context), useRole(context, { role: 'dialog' }), useDismiss(context)]);
+  const getReferenceProps = floatingDisabled ? () => ({}) : interactions.getReferenceProps;
+  const getFloatingProps = floatingDisabled ? () => ({}) : interactions.getFloatingProps;
   const headerBottomSize = useElementSize(headerBottomElement);
-
-  const { getReferenceProps, getFloatingProps } = useInteractions([
-    useClick(context),
-    useRole(context, { role: 'dialog' }),
-    useDismiss(context),
-  ]);
 
   const mainBem = cn(styles['main'], {
     [styles['main--with-sidenav']]: hasSidenav,
@@ -129,25 +128,59 @@ export const Layout = <
     };
   }, [headerBottomSize]);
 
+  const toggleMenu = React.useCallback(() => {
+    if (onHeaderSidenavToggle && !sideNav) {
+      // Custom toggle mode - only call the custom callback
+      setMenuOpen((prev) => {
+        const next = !prev;
+        setTimeout(() => onHeaderSidenavToggle(next), 0);
+        return next;
+      });
+    } else {
+      // Regular sidenav mode - let floating UI handle it
+      setMenuOpen((prev) => !prev);
+    }
+  }, [onHeaderSidenavToggle, sideNav]);
+
+  // Remove the useEffect that was causing infinite loops
+
+  const contextValue = React.useMemo(
+    () => ({
+      y,
+      menuOpen,
+      toggleMenu,
+      headerType,
+      reference: refs.setReference,
+      floating: refs.setFloating,
+      context,
+      getReferenceProps,
+      getFloatingProps,
+      sideNavProps: sideNav,
+      headerElement,
+      headerBottomElement,
+      headerBottomSize,
+      onHeaderSidenavToggle,
+    }),
+    [
+      y,
+      menuOpen,
+      toggleMenu,
+      headerType,
+      refs.setReference,
+      refs.setFloating,
+      context,
+      getReferenceProps,
+      getFloatingProps,
+      sideNav,
+      headerElement,
+      headerBottomElement,
+      headerBottomSize,
+      onHeaderSidenavToggle,
+    ]
+  );
+
   return (
-    <LayoutContext.Provider
-      value={{
-        y,
-        menuOpen,
-        toggleMenu: () => setMenuOpen((o) => !o),
-        headerType,
-        reference: refs.setReference,
-        floating: refs.setFloating,
-        context,
-        getReferenceProps,
-        getFloatingProps,
-        sideNavProps: sideNav,
-        headerElement,
-        headerBottomElement,
-        headerBottomSize,
-        onHeaderSidenavToggle,
-      }}
-    >
+    <LayoutContext.Provider value={contextValue}>
       <AccessibilityProvider>
         <div data-name="layout" {...rest} className={styles['container-wrapper']}>
           <Header {...header} />

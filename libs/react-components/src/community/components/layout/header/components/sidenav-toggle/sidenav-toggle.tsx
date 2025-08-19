@@ -7,36 +7,26 @@ import { LayoutContext } from '../../../layout-context';
 import styles from './sidenav-toggle.module.scss';
 
 export const SidenavToggle = () => {
-  const {
-    menuOpen: contextMenuOpen,
-    reference,
-    getReferenceProps,
-    sideNavProps,
-    onHeaderSidenavToggle,
-  } = React.useContext(LayoutContext);
+  const { menuOpen, reference, getReferenceProps, sideNavProps, onHeaderSidenavToggle, toggleMenu } =
+    React.useContext(LayoutContext);
   const { getLabel } = useLabels();
-  const [localMenuOpen, setLocalMenuOpen] = React.useState(false);
-  const isCustomToggle = typeof onHeaderSidenavToggle === 'function';
-  const menuOpen = isCustomToggle ? localMenuOpen : contextMenuOpen;
+  const hasCustomToggleFunction = typeof onHeaderSidenavToggle === 'function';
   const toggleLabel = getLabel('header.toggle');
 
   const BEM = cn(styles['sidenav-toggle'], { [styles['sidenav-toggle--open']]: menuOpen });
 
-  if (!sideNavProps?.navItems.length && !onHeaderSidenavToggle) {
+  if (!sideNavProps?.navItems.length && !hasCustomToggleFunction) {
     return null;
   }
 
-  const handleClick = () => {
-    if (isCustomToggle) {
-      setLocalMenuOpen((prev) => {
-        const next = !prev;
-        onHeaderSidenavToggle(next);
-        return next;
-      });
-    }
+  const handleCustomClick = () => {
+    toggleMenu();
+    console.log('toggleMenu');
   };
 
-  const buttonProps = isCustomToggle ? { onClick: handleClick } : { ...getReferenceProps(), ref: reference };
+  const buttonProps = hasCustomToggleFunction
+    ? { onClick: handleCustomClick }
+    : { ...getReferenceProps(), ref: reference };
 
   return (
     <Button
