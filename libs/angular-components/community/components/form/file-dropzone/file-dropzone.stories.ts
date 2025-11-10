@@ -1,7 +1,14 @@
 import { ComponentInputs } from "tedi/types";
 import { FileDropzoneComponent } from "./file-dropzone.component";
-import { argsToTemplate, Meta, StoryObj } from "@storybook/angular";
+import {
+  argsToTemplate,
+  Meta,
+  moduleMetadata,
+  StoryObj,
+} from "@storybook/angular";
 import { validateFileSize, validateFileType } from "./utils";
+import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
+import { ButtonComponent } from "tedi/components";
 
 /**
  * FileDropzoneComponent is a component that allows users to drag and drop files or select them through a file input.
@@ -12,22 +19,42 @@ import { validateFileSize, validateFileType } from "./utils";
 
 const meta: Meta<FileDropzoneComponent> = {
   component: FileDropzoneComponent,
-  title: "Community Angular/Form/FileDropzone",
+  decorators: [
+    moduleMetadata({
+      imports: [ReactiveFormsModule, ButtonComponent],
+    }),
+    (storyFn, _context) => {
+      const story = storyFn();
+      if (story.props && story.props["form"]) {
+        return story;
+      }
+
+      const form = new FormGroup({
+        files: new FormControl(new File([], "controlFile.txt")),
+      });
+
+      return {
+        ...story,
+        props: { ...story.props, form },
+      };
+    },
+  ],
+  title: "Community/Form/FileDropzone",
   args: {
     accept: "",
     maxSize: 0,
+    sizeDisplayStandard: "IEC",
     multiple: false,
     validateIndividually: false,
     defaultFiles: [],
     inputId: "file-dropzone",
     className: "",
     label: undefined,
-    disabled: false,
     mode: "append",
     name: "file-dropzone",
     uploadFolder: false,
     validators: [validateFileSize, validateFileType],
-    uploadError: "",
+    hasError: false,
   },
   argTypes: {
     accept: {
@@ -38,12 +65,23 @@ const meta: Meta<FileDropzoneComponent> = {
     maxSize: {
       description: `The maximum file size allowed for upload, in bytes.`,
     },
+    sizeDisplayStandard: {
+      control: {
+        type: "radio",
+      },
+      options: ["SI", "IEC"],
+      description: `Specifies the standard to use when displaying file sizes or maximum file size.
+        Options are "SI" (base 10) or "IEC" (base 2).
+        \nSI units are in multiples of 1000 (e.g., 1 kB = 1000 bytes).
+        \nIEC units are in multiples of 1024 (e.g., 1 KiB = 1024 bytes).
+        https://wiki.ubuntu.com/UnitsPolicy`,
+    },
     multiple: {
       description: `Determines if multiple files can be uploaded at once via the file picker.`,
     },
     validateIndividually: {
       description: `If true, each file will be validated individually. If false, all files will be validated together.
-      Decides on what kind of UI elements are used to display validation errors.`,
+        Decides on what kind of UI elements are used to display validation errors.`,
     },
     defaultFiles: {
       description: `An array of default files that are preloaded in the upload list when the component is loaded.`,
@@ -60,9 +98,6 @@ const meta: Meta<FileDropzoneComponent> = {
     className: {
       description: `Additional CSS class names to apply to the dropzone for custom styling, which are added to the main containing button element.`,
     },
-    disabled: {
-      description: `Disables the file dropzone, preventing user interaction.`,
-    },
     mode: {
       control: {
         type: "radio",
@@ -70,9 +105,8 @@ const meta: Meta<FileDropzoneComponent> = {
       options: ["append", "replace"],
       description: `Specifies how to handle file name conflicts when multiple file of the same name are added.
         Options are:
-        - "append": Adds new files to the end of the list, keeping existing files
-
-        - "replace": Replaces existing files with new files of the same name"`,
+        \n"append": Adds new files to the end of the list, keeping existing files
+        \n"replace": Replaces existing files with new files of the same name`,
     },
     uploadFolder: {
       description: ` If true, allows uploading folders instead of just files. This enables the user to select a folder and upload all its contents. Default file browser behaviour will prevent upload of files in this state.`,
@@ -82,9 +116,9 @@ const meta: Meta<FileDropzoneComponent> = {
       description:
         "Validation functions that can be used to validate files. Each function should return a string error message if validation fails, or undefined if it passes.",
     },
-    uploadError: {
-      description:
-        "An error message that can be set to indicate a problem with the file upload process. Displays a error like the validateIndividually validation error on false.",
+    hasError: {
+      description: `If true, shows the file dropzone as in a erroring state with red border.
+        Overrides default validation state.`,
     },
   },
 };
@@ -93,24 +127,44 @@ export default meta;
 type Story = StoryObj<FileDropzoneComponent>;
 type StoryArgs = ComponentInputs<FileDropzoneComponent>;
 
+const Template = (args: StoryArgs) => `
+<form [formGroup]="form">
+  <div>
+    <div>
+      <tedi-file-dropzone formControlName="files" ${argsToTemplate(args)} />
+    </div>
+  </div>
+</form>
+`;
+
+/** Form-bound example, should work inside a reactive form. */
+export const Default: Story = {
+  render: (args) => {
+    const form = new FormGroup({
+      files: new FormControl(null),
+    });
+
+    const logValue = () => {
+      console.log(form.get("files")?.value);
+    };
+    return {
+      template: `${Template(args)} <button tedi-button (click)="logValue()">Log Form Value</button>`,
+      props: { ...args, form, logValue },
+    };
+  },
+  args: {
+    inputId: "file-dropzone-form-control",
+    name: "file-form-control",
+  },
+};
+
 /** Replaces any same-name files, when usually it indexes them. */
 export const Replace: Story = {
-  render: (args) => ({
-    template: `<tedi-file-dropzone ${argsToTemplate(args)} />`,
-    props: args,
-  }),
+  render: (args) => ({ template: Template(args), props: args }),
   args: {
     mode: "replace",
   },
 };
-
-const Template = (args: StoryArgs) => `
-  <div>
-    <div>
-      <tedi-file-dropzone ${argsToTemplate(args)} />
-    </div>
-  </div>
-  `;
 
 /** Custom un-translated label text. */
 export const WithHint: Story = {
@@ -121,13 +175,18 @@ export const WithHint: Story = {
   },
 };
 
-/** Disabled state, non-interactive. */
+/** Disabled state, non-interactive. Has to be disabled via a form control */
 export const Disabled: Story = {
-  render: (args) => ({ template: Template(args), props: args }),
+  render: (args) => {
+    const form = new FormGroup({
+      files: new FormControl({ value: null, disabled: true }),
+    });
+
+    return { template: Template(args), props: { ...args, form } };
+  },
   args: {
     inputId: "file-dropzone-disabled",
     name: "file-loading",
-    disabled: true,
   },
 };
 

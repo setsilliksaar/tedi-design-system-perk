@@ -46,7 +46,7 @@
 
     &::after {
       position: absolute;
-      top: calc((var(--tree) / 3) + 2px);
+      top: 50%;
       bottom: 0;
       left: calc(var(--tree) / 3);
       width: var(--tree-branch-width);
@@ -56,12 +56,10 @@
       border-radius: 0 var(--button-radius) var(--button-radius) 0;
 
       @include breakpoints.media-breakpoint-down(lg) {
-        top: calc((var(--tree) / 2.5) + 2px);
         left: calc(var(--tree) / 3);
       }
 
       @include breakpoints.media-breakpoint-down(sm) {
-        top: calc((var(--tree) / 2) + 1px);
         left: calc(var(--tree) / 2 - var(--tree-trunk-width));
       }
 
@@ -279,11 +277,6 @@
     @include mixins.responsive-styles(line-height, body-small-regular-line-height);
   }
 
-  .tedi-sidenav__bullet,
-  .tedi-sidenav__sub-item::after {
-    top: calc(var(--medium-sidenav-item-height) / 2);
-  }
-
   .tedi-sidenav__icon {
     font-size: var(--size-05);
   }
@@ -304,11 +297,6 @@
   .tedi-sidenav__sub-item .tedi-sidenav__link {
     @include mixins.responsive-styles(padding-top, side-navigation-item-padding-y-sm);
     @include mixins.responsive-styles(padding-bottom, side-navigation-item-padding-y-sm);
-  }
-
-  .tedi-sidenav__bullet,
-  .tedi-sidenav__sub-item::after {
-    top: calc(var(--small-sidenav-item-height) / 2);
   }
 
   .tedi-sidenav__icon {
